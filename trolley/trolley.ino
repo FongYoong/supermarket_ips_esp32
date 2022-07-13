@@ -32,9 +32,9 @@ void loop() {
   }
   if (locationUpdateTask.isReady())
   {
-    Serial.println("Upload location");
+    //Serial.println("Upload location");
   }
-  Vlc::run();
+  //Vlc::run();
   
   
 }

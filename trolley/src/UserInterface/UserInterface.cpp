@@ -9,7 +9,7 @@ void UserInterface::setup()
 {
     Display.init(); // Initialize OLED
     Display.clear();
-    Display.setBrightness(15);
+    Display.setBrightness(5);
     Display.invertDisplay();
     Display.setFont(Roboto_Bold_10);
     Display.drawString(50, 20, "Wait ah...");
@@ -42,6 +42,7 @@ void UserInterface::displayEnabledPage()
     Display.drawStringMaxWidth(QR_width + QR_xOffset, 0, 128 - QR_width, GlobalVariables::trolleyName);
     // Wi-Fi status
     Display.setTextAlignment(TEXT_ALIGN_CENTER);
+    Display.drawStringMaxWidth(QR_width + QR_xOffset, 35, 128 - QR_width, String(GlobalVariables::bleClients) + String(" users connected."));
     Display.drawStringMaxWidth(QR_width + QR_xOffset, 20, 128 - QR_width, WiFi.status() == WL_CONNECTED ? "Online" : "Offline");
     // Display.drawStringMaxWidth(QR_width + QR_xOffset, 40, 128 - QR_width, "Location");
     Display.display();
