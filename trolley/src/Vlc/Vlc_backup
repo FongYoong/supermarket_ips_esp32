@@ -32,7 +32,7 @@ void Vlc::run()
         double photodiodeValue = analogReadMilliVolts(PIN_PHOTODIODE);
         Serial.println(String("Photodiode (mV):") + photodiodeValue);
         microseconds = micros();
-        //Serial.println(String("Sampling period: ") + sampling_period_us);
+        Serial.println(String("Sampling period: ") + sampling_period_us);
         for(int i=0; i<FFT_SAMPLES; i++)
         {
             vReal[i] = analogRead(PIN_PHOTODIODE)/4095.0*3.3; /*ESP32*/
@@ -113,7 +113,7 @@ void Vlc::EstimateRSS(double *vData, uint16_t bufferSize, double *RSS1, double *
     double F3 = 1500;
     double F4 = 1750;
 
-    double aTHD = 1; //scale factor for tuning range: 0 - 1
+    double aTHD = 0.4; //scale factor for tuning range: 0 - 1
 
     double NT = FFT_SAMPLES/FFT_SAMPLING_FREQUENCY;
 
@@ -148,14 +148,14 @@ void Vlc::EstimateDistance(
   // m =19.99372736 for hpa of 15 for normal small LEDs 
   double M = 0.8047816999; //RX directionality
   // M = 0.5128 for half-power angle of 65 for OPT101
-  double P_TX = 2.6; //transmitted power
+  double P_TX = 2.6/(0.45*1000000); //transmitted power
   //double P_TX = 0.1/(0.45*1000000); //transmitted power
   
   //Convert RSS voltage to watt 
-  double P_RSS1 = RSS1;
-  double P_RSS2 = RSS2;
-  double P_RSS3 = RSS3;
-  double P_RSS4 = RSS4;
+  double P_RSS1 = RSS1/(0.45*1000000);
+  double P_RSS2 = RSS2/(0.45*1000000);
+  double P_RSS3 = RSS3/(0.45*1000000);
+  double P_RSS4 = RSS4/(0.45*1000000);
 
   //Lambertian DC channel gain formula
   *D1 = pow((PD_Area*P_TX*pow(height,m+M))/(PI*P_RSS1), 1/(2+m+M));

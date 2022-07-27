@@ -4,7 +4,7 @@
 #include "Arduino.h"
 #include "SSD1306Wire.h"
 
-#define PHOTODIODE_OUT_PIN 34
+#define PIN_PHOTODIODE 34
 
 class Pins
 {

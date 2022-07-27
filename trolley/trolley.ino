@@ -34,7 +34,7 @@ void loop() {
   {
     //Serial.println("Upload location");
   }
-  //Vlc::run();
+  Vlc::run();
   
   
 }
