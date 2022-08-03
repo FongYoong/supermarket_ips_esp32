@@ -6,9 +6,6 @@ arduinoFFT Vlc::fft = arduinoFFT();
 unsigned int Vlc::sampling_period_us = round(1000000*(1.0/FFT_SAMPLING_FREQUENCY));
 unsigned long Vlc::microseconds = 0;
 
-double Vlc::vReal[FFT_SAMPLES];
-double Vlc::vImag[FFT_SAMPLES];
-
 double Vlc::Pr_1 = 0;
 double Vlc::Pr_2 = 0;
 double Vlc::Pr_3 = 0;
@@ -20,14 +17,8 @@ double Vlc::Dxyz4 = 0;
 double Vlc::RX_x = 0;
 double Vlc::RX_y = 0;
 
-#define MEA_VAR 0.05
-KalmanFilter1D Vlc::rss1KalmanFilter(0, MEA_VAR, 1, 0.01);
-KalmanFilter1D Vlc::rss2KalmanFilter(0, MEA_VAR, 1, 0.01);
-KalmanFilter1D Vlc::rss3KalmanFilter(0, MEA_VAR, 1, 0.01);
-KalmanFilter1D Vlc::rss4KalmanFilter(0, MEA_VAR, 1, 0.01);
-// KalmanFilter1D Vlc::xKalmanFilter(0, 1, 1, 0.01);
-// KalmanFilter1D Vlc::yKalmanFilter(0, 1, 1, 0.01);
-
+double Vlc::vReal[FFT_SAMPLES];
+double Vlc::vImag[FFT_SAMPLES];
 
 void Vlc::setup()
 {
@@ -41,9 +32,10 @@ void Vlc::run()
         double photodiodeValue = analogReadMilliVolts(PIN_PHOTODIODE);
         Serial.println(String("Photodiode (mV):") + photodiodeValue);
         microseconds = micros();
+        //Serial.println(String("Sampling period: ") + sampling_period_us);
         for(int i=0; i<FFT_SAMPLES; i++)
         {
-            vReal[i] = analogRead(PIN_PHOTODIODE)/4095.0*3.3;
+            vReal[i] = analogRead(PIN_PHOTODIODE)/4095.0*3.3; /*ESP32*/
             vImag[i] = 0;
             while(micros() - microseconds < sampling_period_us){
                 //empty loop
@@ -67,14 +59,20 @@ void Vlc::run()
         fft.ComplexToMagnitude(vReal, vImag, FFT_SAMPLES); /* Compute magnitudes */
         // Serial.println("Computed magnitudes:");
         // PrintVector(vReal, (FFT_SAMPLES >> 1), SCL_FREQUENCY);
+
         
-        // double peakFrequency = fft.MajorPeak(vReal, FFT_SAMPLES, FFT_SAMPLING_FREQUENCY);
-        // Serial.println("Major Peak (Hz):");
-        // Serial.print(peakFrequency, 6); //Print out what frequency is the most dominant.
-        // Serial.println("");
+        double x = fft.MajorPeak(vReal, FFT_SAMPLES, FFT_SAMPLING_FREQUENCY);
+        Serial.println("Major Peak (Hz):");
+        Serial.print(x, 6); //Print out what frequency is the most dominant.
+        Serial.println("");
         
+        //Obtain magnitude for 4 frequency component
         EstimateRSS(vReal, FFT_SAMPLES, &Pr_1,&Pr_2,&Pr_3,&Pr_4);
+        
+        //Estimate distance based on the RSS
         EstimateDistance(Pr_1,Pr_2,Pr_3,Pr_4,&Dxyz1,&Dxyz2,&Dxyz3,&Dxyz4);
+        
+        //Estimate coordinate based on 4 distance estimated
         EstimateCoordinate(Dxyz1,Dxyz2,Dxyz3,Dxyz4,&RX_x,&RX_y);
     }
 }
@@ -115,34 +113,26 @@ void Vlc::EstimateRSS(double *vData, uint16_t bufferSize, double *RSS1, double *
     double F3 = 1500;
     double F4 = 1750;
 
+    double aTHD = 1; //scale factor for tuning range: 0 - 1
+
     double NT = FFT_SAMPLES/FFT_SAMPLING_FREQUENCY;
 
-    double rss1 = vData[int(F1*NT)];
-    *RSS1 = RemoveRSSNoise(rss1KalmanFilter.updateEstimate(rss1));
+    *RSS1 = vData[int(F1*NT)]/(aTHD*FFT_SAMPLES);
     Serial.print(F1);
     Serial.print(" Hz: ");
     Serial.println(*RSS1,6);
-    double rss2 = vData[int(F2*NT)];
-    *RSS2 = RemoveRSSNoise(rss2KalmanFilter.updateEstimate(rss2));
+    *RSS2 = vData[int(F2*NT)]/(aTHD*FFT_SAMPLES);
     Serial.print(F2);
     Serial.print(" Hz: ");
     Serial.println(*RSS2,6);
-    double rss3 = vData[int(F3*NT)];
-    *RSS3 = RemoveRSSNoise(rss3KalmanFilter.updateEstimate(rss3));
+    *RSS3 = vData[int(F3*NT)]/(aTHD*FFT_SAMPLES);
     Serial.print(F3);
     Serial.print(" Hz: ");
     Serial.println(*RSS3,6);
-    double rss4 = vData[int(F4*NT)];
-    *RSS4 = RemoveRSSNoise(rss4KalmanFilter.updateEstimate(rss4));
+    *RSS4 = vData[int(F4*NT)]/(aTHD*FFT_SAMPLES); 
     Serial.print(F4);
     Serial.print(" Hz: ");
     Serial.println(*RSS4,6);
-}
-
-double Vlc::RemoveRSSNoise(double RSS)
-{
-  //return max(RSS - 0.2, 0.001);
-  return RSS;
 }
 
 /*RSS Distance Estimation*/
@@ -151,27 +141,29 @@ void Vlc::EstimateDistance(
     double *D1, double *D2, double *D3, double *D4) {
 
   /*Distance Estimation variables*/
-  double height = 0.98; // 0.98 meter
+  double height = 1; // 1 meter
   double PD_Area = 0.0000052441; //5.2441 mm2
   double m = 1; //TX light source lambertian pattern directionality 
   // m = 1 for half-power angle (hpa) of 60 for the LEDs
   // m =19.99372736 for hpa of 15 for normal small LEDs 
   double M = 0.8047816999; //RX directionality
   // M = 0.5128 for half-power angle of 65 for OPT101
-  double P_TX = FFT_SAMPLES * 4000; //transmitted power
-  // 4000
-  // 700
-  // 180
+  double P_TX = 180; //transmitted power
   //double P_TX = 2.6 * 0.0001; //transmitted power
   //double P_TX = 2.6; //transmitted power
   //double P_TX = 0.1/(0.45*1000000); //transmitted power
+  
+  //Convert RSS voltage to watt 
+  double P_RSS1 = RSS1;
+  double P_RSS2 = RSS2;
+  double P_RSS3 = RSS3;
+  double P_RSS4 = RSS4;
 
   //Lambertian DC channel gain formula
-  *D1 = pow((PD_Area*P_TX*pow(height,m+M))/(PI*RSS1), 1/(2+m+M));
-  *D2 = pow((PD_Area*P_TX*pow(height,m+M))/(PI*RSS2), 1/(2+m+M));
-  *D3 = pow((PD_Area*P_TX*pow(height,m+M))/(PI*RSS3), 1/(2+m+M));
-  *D4 = pow((PD_Area*P_TX*pow(height,m+M))/(PI*RSS4), 1/(2+m+M));
-
+  *D1 = pow((PD_Area*P_TX*pow(height,m+M))/(PI*P_RSS1), 1/(2+m+M));
+  *D2 = pow((PD_Area*P_TX*pow(height,m+M))/(PI*P_RSS2), 1/(2+m+M));
+  *D3 = pow((PD_Area*P_TX*pow(height,m+M))/(PI*P_RSS3), 1/(2+m+M));
+  *D4 = pow((PD_Area*P_TX*pow(height,m+M))/(PI*P_RSS4), 1/(2+m+M));
 
   // Serial.print("Dist1: ");
   // Serial.println(*D1,6);
@@ -187,18 +179,18 @@ void Vlc::EstimateDistance(
 void Vlc::EstimateCoordinate(
     double Dist_xyz1, double Dist_xyz2, 
     double Dist_xyz3, double Dist_xyz4, double *Xe, double *Ye ) {
-    
-  double LED1_x = 1.5; //LED 1 coordinate x
-  double LED1_y = 1; //LED 1 coordinate y
+  /*Coordinate Estimation variables*/
+  double LED1_x = 2.5; //LED 1 coordinate x
+  double LED1_y = 2; //LED 1 coordinate y
   
-  double LED2_x = 1.5;
-  double LED2_y = 0;
+  double LED2_x = 2.5;
+  double LED2_y = 1;
   
-  double LED3_x = 0;
-  double LED3_y = 0;
+  double LED3_x = 1;
+  double LED3_y = 1;
   
-  double LED4_x = 0;
-  double LED4_y = 1;
+  double LED4_x = 1;
+  double LED4_y = 2;
 
   //Elements of Matrix A (A) [3x2]
   double a11=LED2_x - LED1_x; double a12 = LED2_y - LED1_y;
@@ -229,38 +221,22 @@ void Vlc::EstimateCoordinate(
 
   //Elements of (A^T*A)^-1*A^T*B [2x1]
   *Xe = aTa_Inv_aT11*b11 + aTa_Inv_aT12*b21 + aTa_Inv_aT13*b31;
-  *Ye = (aTa_Inv_aT21*b11 + aTa_Inv_aT22*b21 + aTa_Inv_aT23*b31);
-
-  Serial.println("");
-  Serial.print("(X: ");
-  Serial.print(*Xe,6);
-  Serial.print(", Y: ");
-  Serial.print(*Ye,6);
-  Serial.print(")");
-  Serial.println("");
-  // double estimatedX = xKalmanFilter.updateEstimate(*Xe);
-  // double estimatedY = yKalmanFilter.updateEstimate(*Ye);
-  // Serial.print("(X: ");
-  // Serial.print(estimatedX,6);
-  // Serial.print(", Y: ");
-  // Serial.print(estimatedY,6);
-  // Serial.print(")");
-  // Serial.println("");
+  *Ye = aTa_Inv_aT21*b11 + aTa_Inv_aT22*b21 + aTa_Inv_aT23*b31;
 
 //   Serial.println("LED position:");
 //   Serial.print("LED 1:    (");Serial.print(LED1_x,4);Serial.print(", ");Serial.print(LED1_y,4);Serial.println(")");
 //   Serial.print("LED 2:    (");Serial.print(LED2_x,4);Serial.print(", ");Serial.print(LED2_y,4);Serial.println(")");
 //   Serial.print("LED 3:    (");Serial.print(LED3_x,4);Serial.print(", ");Serial.print(LED3_y,4);Serial.println(")");
 //   Serial.print("LED 4:    (");Serial.print(LED4_x,4);Serial.print(", ");Serial.print(LED4_y,4);Serial.println(")");
-  // Serial.println("Estimated Receiver Coordinate:");
-  // Serial.print("(X: ");
-  // Serial.print(*Xe,6);
-  // Serial.print(", Y: ");
-  // Serial.print(*Ye,6);
-  // Serial.print(")");
-  // Serial.println("");
+  Serial.println("Estimated Receiver Coordinate:");
+  Serial.print("(X: ");
+  Serial.print(*Xe,6);
+  Serial.print(", Y: ");
+  Serial.print(*Ye,6);
+  Serial.print(")");
+  Serial.println("");
 }
 
-void Vlc::EstimateKalman() {
+void VLC::EstimateKalman() {
   
 }
