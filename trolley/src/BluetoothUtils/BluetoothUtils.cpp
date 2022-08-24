@@ -11,13 +11,13 @@ class ServerCallbacks : public NimBLEServerCallbacks
   {
     Serial.println("BLE: Device connected");
     GlobalVariables::bleClients++;
-    // pServer->getAdvertising()->start();
+    pServer->getAdvertising()->start();
   };
   void onDisconnect(NimBLEServer *pServer)
   {
     Serial.println("BLE: Device disconnected");
     GlobalVariables::bleClients--;
-    //   pServer->getAdvertising()->start();
+    pServer->getAdvertising()->start();
   }
 };
 
