@@ -14,6 +14,8 @@ namespace Utilities
         RepeatingTask(unsigned long interval) : interval(interval){};
         bool isReady();
     };
+
+    String toCoordinatesString(double x, double y);
 }
 
 #endif

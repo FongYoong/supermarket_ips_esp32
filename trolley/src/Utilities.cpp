@@ -12,3 +12,8 @@ bool RepeatingTask::isReady()
     }
     return ready;
 }
+
+String Utilities::toCoordinatesString(double x, double y)
+{
+    return String(x, 6) + "," + String(y, 6);
+}

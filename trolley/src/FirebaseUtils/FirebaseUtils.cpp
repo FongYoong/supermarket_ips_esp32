@@ -2,9 +2,17 @@
 #include "addons/TokenHelper.h" //Provide the token generation process info.
 #include "addons/RTDBHelper.h"  //Provide the RTDB payload printing info and other helper functions.
 
+
+String FirebaseUtils::configPath = String("/trolley_config/") + String(GlobalVariables::trolleyId);
+String FirebaseUtils::logPath = String("/trolley_data/") + String(GlobalVariables::trolleyId);
+String FirebaseUtils::pastLogsPath = String("/trolley_past_data/") + String(GlobalVariables::trolleyId);
 FirebaseAuth FirebaseUtils::auth;                      // The user UID can be obtained from auth.token.uid
 FirebaseConfig FirebaseUtils::config;                  // Firebase Config data
 FirebaseData FirebaseUtils::configReceiveFirebaseData; // FirebaseData received from config changes
+FirebaseData FirebaseUtils::loggingFirebaseData; // FirebaseData received from uploading logs
+
+Utilities::RepeatingTask FirebaseUtils::getConfigTask(GET_CONFIG_INTERVAL);
+Utilities::RepeatingTask FirebaseUtils::uploadLogTask(UPLOAD_LOG_INTERVAL);
 
 void FirebaseUtils::setup()
 {
@@ -18,82 +26,115 @@ void FirebaseUtils::setup()
   config.token_status_callback = tokenStatusCallback; // Token generation for authentication
   config.max_token_generation_retry = 5;              // Maximum retries for token generation
   Firebase.begin(&config, &auth);                     // Initialize Firebase authentication and config
-  String configPath = String("/trolleys/") + String(GlobalVariables::trolleyName) + String("/config");
-  if (!Firebase.beginStream(configReceiveFirebaseData, configPath))
-  {
-    Serial.println("Could not begin config stream\nREASON: " + configReceiveFirebaseData.errorReason());
-  }
-  Firebase.setStreamCallback(configReceiveFirebaseData, configStreamCallback, configStreamTimeoutCallback);
+
+  // The code below is to automatically detect config changes but it is unused due to high memory usage.
+  // if (!Firebase.beginStream(configReceiveFirebaseData, configPath))
+  // {
+  //   Serial.println("Could not begin config stream\nREASON: " + configReceiveFirebaseData.errorReason());
+  // }
+  // Firebase.setStreamCallback(configReceiveFirebaseData, configStreamCallback, configStreamTimeoutCallback);
 }
 
-// void uploadLocationtoFirebase(char* location, unsigned long custom_timestamp)
-// {
-//   // Upload log to Firebase
-//   Serial.println("------------------------------------");
-//   FirebaseJson log_json; // JSON object to send to Firebase
-//   log_json.add("temperature", temperatureValue);
-//   if (Firebase.pushJSON(loggingFirebaseData, "/essential_data", log_json))
-//   {
-//     // Successfully pushed
-//     if (custom_timestamp == 0)
-//     {
-//       // Use Firebase's timestamp
-//       if (Firebase.setTimestamp(loggingFirebaseData, "/essential_data/" + loggingFirebaseData.pushName() + "/dateCreated"))
-//       {
-//         // Successfully set Firebase timestamp
-//         Serial.println("Added log to Firebase");
-//       }
-//       else
-//       {
-//         Serial.println("Failed to set Firebase timestamp: " + loggingFirebaseData.errorReason());
-//       }
-//     }
-//     else
-//     {
-//       // Use custom timestamp
-//       if (Firebase.setInt(loggingFirebaseData, "/essential_data/" + loggingFirebaseData.pushName() + "/dateCreated", custom_timestamp))
-//       {
-//         // Successfully set custom timestamp
-//         Serial.println("Added CUSTOM log to Firebase");
-//       }
-//       else
-//       {
-//         Serial.println("Failed to set CUSTOM timestamp in Firebase: " + loggingFirebaseData.errorReason());
-//       }
-//     }
-//   }
-//   else
-//   {
-//     Serial.println("Failed to log to Firebase: " + loggingFirebaseData.errorReason());
-//   }
-//   Serial.println("------------------------------------");
-// }
-
-void FirebaseUtils::configStreamCallback(StreamData data)
+void FirebaseUtils::run()
 {
-  // Triggered when a config change occurs in Firebase
-  if (data.dataType() == "json")
+  if (GlobalVariables::trolleyEnabled && uploadLogTask.isReady())
   {
-    Serial.println("Config change occurred");
-    FirebaseJson *config_json = data.to<FirebaseJson *>(); // Config data received from Firebase
-    FirebaseJsonData trolleyEnabledResult;
-    config_json->get(trolleyEnabledResult, "enabled");
-    if (trolleyEnabledResult.success)
+    uploadLogToFirebase(GlobalVariables::coordinates);
+  }
+  if (getConfigTask.isReady())
+  {
+    getConfigFromFirebase();
+  }
+}
+
+void FirebaseUtils::getConfigFromFirebase()
+{
+  Serial.println("------------------------------------");
+  Serial.println("Retrieving trolley config...");
+  if (Firebase.ready() && Firebase.getJSON(configReceiveFirebaseData, configPath)) {
+    if (configReceiveFirebaseData.dataType() == "json")
     {
-      GlobalVariables::trolleyEnabled = trolleyEnabledResult.to<bool>();
+      FirebaseJson *config_json = configReceiveFirebaseData.to<FirebaseJson *>(); // Config data received from Firebase
+      FirebaseJsonData trolleyEnabledResult;
+      config_json->get(trolleyEnabledResult, "enabled");
+      if (trolleyEnabledResult.success)
+      {
+        GlobalVariables::trolleyEnabled = trolleyEnabledResult.to<bool>();
+        Serial.println("trolleyEnabled:" + String(GlobalVariables::trolleyEnabled));
+      }
     }
   }
+  Serial.println("------------------------------------");
 }
 
-void FirebaseUtils::configStreamTimeoutCallback(bool timeout)
+void FirebaseUtils::uploadLogToFirebase(String coordinates)
 {
-  // Triggered if config stream is unresponsive or loses connection
-  if (timeout)
+  Serial.println("------------------------------------");
+  Serial.println("Uploading log...");
+  FirebaseJson log_json;
+  log_json.add("coordinates", coordinates);
+  if (Firebase.ready() && Firebase.pushJSON(loggingFirebaseData, pastLogsPath, log_json))
   {
-    Serial.println("\nConfig stream timeout, resume streaming...\n");
+    Serial.println("Uploaded and pushed latest log to past logs");
+    if (Firebase.setTimestamp(loggingFirebaseData, pastLogsPath + "/" + loggingFirebaseData.pushName() + "/dateCreated"))
+    {
+      Serial.println("Uploaded and pushed to past logs");
+    }
+    else
+    {
+      Serial.println("Failed to set Firebase timestamp: " + loggingFirebaseData.errorReason());
+    }
+
+    // Update log
+    log_json.add("name", GlobalVariables::trolleyName);
+    if (Firebase.ready() && Firebase.setJSON(loggingFirebaseData, logPath, log_json)) {
+      if (Firebase.setTimestamp(loggingFirebaseData, logPath + "/dateCreated"))
+      {
+        Serial.println("Uploaded and set latest log");
+      }
+      else
+      {
+        Serial.println("Failed to set Firebase timestamp: " + loggingFirebaseData.errorReason());
+      }
+    }
+    else
+    {
+      Serial.println("Failed to update log in Firebase: " + loggingFirebaseData.errorReason());
+    }
   }
-  if (!configReceiveFirebaseData.httpConnected())
+  else
   {
-    Serial.printf("Config stream error code: %d, reason: %s\n\n", configReceiveFirebaseData.httpCode(), configReceiveFirebaseData.errorReason().c_str());
+    Serial.println("Failed to push log to Firebase: " + loggingFirebaseData.errorReason());
   }
+  Serial.println("------------------------------------");
 }
+
+// void FirebaseUtils::configStreamCallback(StreamData data)
+// {
+//   // Triggered when a config change occurs in Firebase
+//   Serial.println("Config change occurred");
+//   if (data.dataType() == "json")
+//   {
+//     FirebaseJson *config_json = data.to<FirebaseJson *>(); // Config data received from Firebase
+//     FirebaseJsonData trolleyEnabledResult;
+//     config_json->get(trolleyEnabledResult, "enabled");
+//     if (trolleyEnabledResult.success)
+//     {
+//       GlobalVariables::trolleyEnabled = trolleyEnabledResult.to<bool>();
+//       Serial.println("trolleyEnabled:" + String(GlobalVariables::trolleyEnabled));
+//     }
+//   }
+// }
+
+// void FirebaseUtils::configStreamTimeoutCallback(bool timeout)
+// {
+//   // Triggered if config stream is unresponsive or loses connection
+//   if (timeout)
+//   {
+//     Serial.println("\nConfig stream timeout, resume streaming...\n");
+//   }
+//   if (!configReceiveFirebaseData.httpConnected())
+//   {
+//     Serial.printf("Config stream error code: %d, reason: %s\n\n", configReceiveFirebaseData.httpCode(), configReceiveFirebaseData.errorReason().c_str());
+//   }
+// }

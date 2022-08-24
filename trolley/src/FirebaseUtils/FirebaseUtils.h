@@ -2,6 +2,7 @@
 #define FIREBASE_UTILS_H
 
 #include "Arduino.h"
+#include "../Utilities.h"
 #include <FirebaseESP32.h>
 #include "../GlobalVariables/GlobalVariables.h"
 
@@ -11,26 +12,38 @@
 #define API_KEY "AIzaSyD_x7HHCmyzOC3KEzUEIGNFxry8YteM4Mw"
 #define DATABASE_URL "https://idp-vlc-default-rtdb.asia-southeast1.firebasedatabase.app"
 
-#define UPDATE_FIREBASE_CONFIG_INTERVAL 2000 // Milliseconds // Interval between updating pending config changes
+// Intervals
+#define GET_CONFIG_INTERVAL 5000
+#define UPLOAD_LOG_INTERVAL 5000
 
 class FirebaseUtils
 {
 public:
+    static String configPath;
+    static String logPath;
+    static String pastLogsPath;
     static FirebaseAuth auth;     // The user UID can be obtained from auth.token.uid
     static FirebaseConfig config; // Firebase Config data
     static FirebaseData configReceiveFirebaseData;
+    static FirebaseData loggingFirebaseData;
+
+    static Utilities::RepeatingTask getConfigTask;
+    static Utilities::RepeatingTask uploadLogTask;
+
     static void setup();
-    // static void uploadLocationtoFirebase(float temperatureValue, unsigned long custom_timestamp = 0);
-    static void configStreamCallback(StreamData data);
-    static void configStreamTimeoutCallback(bool timeout);
+    static void run();
+    static void getConfigFromFirebase();
+    static void uploadLogToFirebase(String coordinates);
+    // static void configStreamCallback(StreamData data);
+    // static void configStreamTimeoutCallback(bool timeout);
 };
 
 // extern FirebaseAuth auth; // The user UID can be obtained from auth.token.uid
 // extern FirebaseConfig config; // Firebase Config data
 
-void firebaseSetup();
-void uploadLocationtoFirebase(float temperatureValue, unsigned long custom_timestamp = 0);
-void configStreamCallback(StreamData data);
-void configStreamTimeoutCallback(bool timeout);
+// void firebaseSetup();
+// void uploadLogToFirebase(String coordinates);
+// void configStreamCallback(StreamData data);
+// void configStreamTimeoutCallback(bool timeout);
 
 #endif

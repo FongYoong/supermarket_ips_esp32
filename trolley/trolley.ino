@@ -10,7 +10,6 @@
 // Tasks
 Utilities::RepeatingTask wifiReconnectTask(WIFI_RECONNECT_INTERVAL);
 Utilities::RepeatingTask uiRefreshTask(UI_REFRESH_INTERVAL);
-Utilities::RepeatingTask locationUpdateTask(GlobalVariables::locationUpdateInterval);
 
 void setup() {
   Serial.begin(115200);
@@ -18,7 +17,10 @@ void setup() {
   WifiUtils::setup();
   FirebaseUtils::setup();
   BluetoothUtils::setup();
+  Vlc::setup();
   UserInterface::setup();
+//  Serial.println(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
+//  Serial.println(ESP_OK);
 }
 
 void loop() {
@@ -26,15 +28,14 @@ void loop() {
   {
     WifiUtils::reconnect();
   }
+  FirebaseUtils::run();
+  if (GlobalVariables::trolleyEnabled)
+  {
+    Vlc::run();
+  }
   if (uiRefreshTask.isReady())
   {
     UserInterface::renderUI(); // Display user interface
   }
-  if (locationUpdateTask.isReady())
-  {
-    //Serial.println("Upload location");
-  }
-  Vlc::run();
-  
-  
+  BluetoothUtils::run();
 }

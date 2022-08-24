@@ -53,7 +53,7 @@ void UserInterface::displayDisabledPage()
     Display.clear();
     Display.setFont(Roboto_Bold_10);
     Display.setTextAlignment(TEXT_ALIGN_CENTER);
-    Display.drawStringMaxWidth(50, 0, 20, GlobalVariables::trolleyName);
-    Display.drawString(50, 40, "This trolley is disabled");
+    Display.drawStringMaxWidth(64, 10, 78, GlobalVariables::trolleyName);
+    Display.drawString(60, 40, "This trolley is disabled");
     Display.display();
 }

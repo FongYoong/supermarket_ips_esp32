@@ -4,8 +4,10 @@
 #include "Arduino.h"
 #include <WiFi.h>
 // WiFi credentials
-#define WIFI_SSID "D253@unifi"
-#define WIFI_PASSWORD "66886688"
+#define WIFI_SSID "Eaglehawk"
+#define WIFI_PASSWORD "bbqwtfkfc"
+// #define WIFI_SSID "D253@unifi"
+// #define WIFI_PASSWORD "66886688"
 #define WIFI_RECONNECT_INTERVAL 10000 // Milliseconds // Interval between reconnecting Wi-Fi
 
 class WifiUtils
