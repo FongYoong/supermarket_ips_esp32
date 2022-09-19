@@ -12,8 +12,6 @@
 
 #define FFT_SAMPLES 2048
 #define FFT_SAMPLING_FREQUENCY 4096.0
-// uint16_t Vlc::samples = 2048; //This value MUST ALWAYS be a power of 2
-// double Vlc::samplingFrequency = 4096; //Hz, must be less than 10000 due to ADC
 
 #define SCL_INDEX 0x00
 #define SCL_TIME 0x01
@@ -55,13 +53,12 @@ public:
     static KalmanFilter1D rss2KalmanFilter;
     static KalmanFilter1D rss3KalmanFilter;
     static KalmanFilter1D rss4KalmanFilter;
-    // static KalmanFilter1D xKalmanFilter;
-    // static KalmanFilter1D yKalmanFilter;
 
-    // static void PrintVector(double *vData, uint16_t bufferSize, uint8_t scaleType);
     static void EstimateRSS(double *vData, uint16_t bufferSize, double *RSS1, double *RSS2, double *RSS3, double *RSS4);
     static void EstimateDistance(double RSS1, double RSS2, double RSS3, double RSS4, double *D1, double *D2, double *D3, double *D4);
     static void EstimateCoordinate(double Dist_xyz1, double Dist_xyz2, double Dist_xyz3, double Dist_xyz4, double *Xe, double *Ye);
+    // static void PrintVector(double *vData, uint16_t bufferSize, uint8_t scaleType);
+    
 };
 
 #endif

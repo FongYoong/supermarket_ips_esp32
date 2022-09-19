@@ -3,7 +3,7 @@ const int ledPin2 = 17;  // 17 corresponds to GPIO17 (yellow)
 const int ledPin3 = 19;  // 19 corresponds to GPIO1 (blue)
 const int ledPin4 = 18;  // 18 corresponds to GPIO3 (black)
 
-const int DutyCycle1 = 127; // 127/255 = 0.5,204/255=0.8
+const int dutyCycle = 127; // 127/255 = 0.5,204/255=0.8
 
 const double freq1 = 1000;
 const double freq2 = 1250;
@@ -29,10 +29,10 @@ void setup(){
   ledcAttachPin(ledPin2, ledChannel2);
   ledcAttachPin(ledPin3, ledChannel3);
   ledcAttachPin(ledPin4, ledChannel4);
-  ledcWrite(ledChannel1, DutyCycle1);
-  ledcWrite(ledChannel2, DutyCycle1);
-  ledcWrite(ledChannel3, DutyCycle1);
-  ledcWrite(ledChannel4, DutyCycle1);
+  ledcWrite(ledChannel1, dutyCycle);
+  ledcWrite(ledChannel2, dutyCycle);
+  ledcWrite(ledChannel3, dutyCycle);
+  ledcWrite(ledChannel4, dutyCycle);
   Serial.begin(115200);
 }
  

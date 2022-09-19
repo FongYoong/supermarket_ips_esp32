@@ -25,11 +25,10 @@ KalmanFilter1D Vlc::rss1KalmanFilter(0, MEA_VAR, 1, 0.01);
 KalmanFilter1D Vlc::rss2KalmanFilter(0, MEA_VAR, 1, 0.01);
 KalmanFilter1D Vlc::rss3KalmanFilter(0, MEA_VAR, 1, 0.01);
 KalmanFilter1D Vlc::rss4KalmanFilter(0, MEA_VAR, 1, 0.01);
-// KalmanFilter1D Vlc::xKalmanFilter(0, 1, 1, 0.01);
-// KalmanFilter1D Vlc::yKalmanFilter(0, 1, 1, 0.01);
 
 void Vlc::setup()
 {
+  
 }
 
 void Vlc::run()
@@ -61,40 +60,8 @@ void Vlc::run()
     GlobalVariables::coordinates = Utilities::toCoordinatesString(coordX, coordY);
     BluetoothUtils::updateCoordinatesCharacteristics(GlobalVariables::coordinates);
     Serial.println("------------------------------------");
-    // unsigned long start = micros();
-    // unsigned long end = micros();
-    // unsigned long delta = end - start;
-    // Serial.println(Sdelta);
   }
 }
-
-// void Vlc::PrintVector(double *vData, uint16_t bufferSize, uint8_t scaleType)
-// {
-//   for (uint16_t i = 0; i < bufferSize; i++)
-//   {
-//     double abscissa;
-//     /* Print abscissa value */
-//     switch (scaleType)
-//     {
-//       case SCL_INDEX:
-//         abscissa = (i * 1.0);
-//   break;
-//       case SCL_TIME:
-//         abscissa = ((i * 1.0) / FFT_SAMPLING_FREQUENCY);
-//   break;
-//       case SCL_FREQUENCY:
-//         abscissa = ((i * 1.0 * FFT_SAMPLING_FREQUENCY) / FFT_SAMPLES);
-//   break;
-//     }
-//     Serial.print(abscissa, 6);
-//     if(scaleType==SCL_FREQUENCY) {
-//       Serial.print("Hz");
-//     }
-//     Serial.print(" ");
-//     Serial.println(vData[i], 4);
-//   }
-//   Serial.println();
-// }
 
 void Vlc::EstimateRSS(double *vData, uint16_t bufferSize, double *RSS1, double *RSS2, double *RSS3, double *RSS4)
 {
@@ -138,13 +105,8 @@ void Vlc::EstimateDistance(
   double height = 0.98;          // 0.98 meter
   double PD_Area = 0.0000052441; // 5.2441 mm2
   double m = 1;                  // TX light source lambertian pattern directionality
-  // m = 1 for half-power angle (hpa) of 60 for the LEDs
-  // m =19.99372736 for hpa of 15 for normal small LEDs
   double M = 0.8047816999; // RX directionality
-  // M = 0.5128 for half-power angle of 65 for OPT101
-  double P_TX = FFT_SAMPLES * 4000; // transmitted power
-  // double P_TX = 2.6 * 0.0001; //transmitted power
-  // double P_TX = 0.1/(0.45*1000000); //transmitted power
+  double P_TX = FFT_SAMPLES * 4000; // Transmitted power
 
   // Lambertian DC channel gain formula
   *D1 = pow((PD_Area * P_TX * pow(height, m + M)) / (PI * RSS1), 1 / (2 + m + M));
@@ -152,14 +114,6 @@ void Vlc::EstimateDistance(
   *D3 = pow((PD_Area * P_TX * pow(height, m + M)) / (PI * RSS3), 1 / (2 + m + M));
   *D4 = pow((PD_Area * P_TX * pow(height, m + M)) / (PI * RSS4), 1 / (2 + m + M));
 
-  // Serial.print("Dist1: ");
-  // Serial.println(*D1,6);
-  // Serial.print("Dist2: ");
-  // Serial.println(*D2,6);
-  // Serial.print("Dist3: ");
-  // Serial.println(*D3,6);
-  // Serial.print("Dist4: ");
-  // Serial.println(*D4,6);
 }
 
 /*Multilateration Algorithm*/
@@ -233,17 +187,32 @@ void Vlc::EstimateCoordinate(
   Serial.print(*Ye, 6);
   Serial.print(")");
   Serial.println("");
-
-  //   Serial.println("LED position:");
-  //   Serial.print("LED 1:    (");Serial.print(LED1_x,4);Serial.print(", ");Serial.print(LED1_y,4);Serial.println(")");
-  //   Serial.print("LED 2:    (");Serial.print(LED2_x,4);Serial.print(", ");Serial.print(LED2_y,4);Serial.println(")");
-  //   Serial.print("LED 3:    (");Serial.print(LED3_x,4);Serial.print(", ");Serial.print(LED3_y,4);Serial.println(")");
-  //   Serial.print("LED 4:    (");Serial.print(LED4_x,4);Serial.print(", ");Serial.print(LED4_y,4);Serial.println(")");
-  // Serial.println("Estimated Receiver Coordinate:");
-  // Serial.print("(X: ");
-  // Serial.print(*Xe,6);
-  // Serial.print(", Y: ");
-  // Serial.print(*Ye,6);
-  // Serial.print(")");
-  // Serial.println("");
 }
+
+// void Vlc::PrintVector(double *vData, uint16_t bufferSize, uint8_t scaleType)
+// {
+//   for (uint16_t i = 0; i < bufferSize; i++)
+//   {
+//     double abscissa;
+//     /* Print abscissa value */
+//     switch (scaleType)
+//     {
+//       case SCL_INDEX:
+//         abscissa = (i * 1.0);
+//   break;
+//       case SCL_TIME:
+//         abscissa = ((i * 1.0) / FFT_SAMPLING_FREQUENCY);
+//   break;
+//       case SCL_FREQUENCY:
+//         abscissa = ((i * 1.0 * FFT_SAMPLING_FREQUENCY) / FFT_SAMPLES);
+//   break;
+//     }
+//     Serial.print(abscissa, 6);
+//     if(scaleType==SCL_FREQUENCY) {
+//       Serial.print("Hz");
+//     }
+//     Serial.print(" ");
+//     Serial.println(vData[i], 4);
+//   }
+//   Serial.println();
+// }

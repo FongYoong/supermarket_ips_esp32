@@ -44,7 +44,6 @@ void UserInterface::displayEnabledPage()
     Display.setTextAlignment(TEXT_ALIGN_CENTER);
     Display.drawStringMaxWidth(QR_width + QR_xOffset, 35, 128 - QR_width, String(GlobalVariables::bleClients) + String(" users connected."));
     Display.drawStringMaxWidth(QR_width + QR_xOffset, 20, 128 - QR_width, WiFi.status() == WL_CONNECTED ? "Online" : "Offline");
-    // Display.drawStringMaxWidth(QR_width + QR_xOffset, 40, 128 - QR_width, "Location");
     Display.display();
 }
 

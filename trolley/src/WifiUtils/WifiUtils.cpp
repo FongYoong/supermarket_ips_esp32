@@ -20,9 +20,6 @@ void WifiUtils::setup()
   if (WiFi.status() == WL_CONNECTED)
   {
     wifiRetries = 0;
-    //    Serial.println("Connected with IP: ");
-    //    Serial.print(WiFi.localIP());
-    //    Serial.println();
   }
   else
   {

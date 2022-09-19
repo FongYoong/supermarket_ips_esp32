@@ -19,8 +19,8 @@ void setup() {
   BluetoothUtils::setup();
   Vlc::setup();
   UserInterface::setup();
-//  Serial.println(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
-//  Serial.println(ESP_OK);
+  // Uncomment below if Bluetooth uses too much memory
+  //  Serial.println(esp_bt_controller_mem_release(ESP_BT_MODE_CLASSIC_BT));
 }
 
 void loop() {

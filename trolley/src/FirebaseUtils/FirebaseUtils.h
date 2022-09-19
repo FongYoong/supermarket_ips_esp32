@@ -13,8 +13,8 @@
 #define DATABASE_URL "https://idp-vlc-default-rtdb.asia-southeast1.firebasedatabase.app"
 
 // Intervals
-#define GET_CONFIG_INTERVAL 5000
-#define UPLOAD_LOG_INTERVAL 5000
+#define GET_CONFIG_INTERVAL 3500
+#define UPLOAD_LOG_INTERVAL 2000
 
 class FirebaseUtils
 {
@@ -37,13 +37,5 @@ public:
     // static void configStreamCallback(StreamData data);
     // static void configStreamTimeoutCallback(bool timeout);
 };
-
-// extern FirebaseAuth auth; // The user UID can be obtained from auth.token.uid
-// extern FirebaseConfig config; // Firebase Config data
-
-// void firebaseSetup();
-// void uploadLogToFirebase(String coordinates);
-// void configStreamCallback(StreamData data);
-// void configStreamTimeoutCallback(bool timeout);
 
 #endif

@@ -2,9 +2,6 @@
 #define BLUETOOTH_UTILS_H
 
 #include "Arduino.h"
-// #include <BLEDevice.h>
-// #include <BLEUtils.h>
-// #include <BLEServer.h>
 #include "NimBLEDevice.h"
 #include "../GlobalVariables/GlobalVariables.h"
 
@@ -17,13 +14,10 @@ public:
     static void setup();
     static void run();
     static void updateCoordinatesCharacteristics(String coordinates);
-    // static void enableAdvertising();
-    // static void disableAdvertising();
 
     static bool previousEnabledState;
     static NimBLECharacteristic *coordCharacteristic;
     static NimBLEServer *bleServer;
-    // static NimBLEAdvertising *pAdvertising;
 
 };
 
